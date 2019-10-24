@@ -1,9 +1,11 @@
-
-
 version: 2.0
 jobs:
+   build:
+     docker:
+        # Specify the version you desire here
+        - image: circleci/php:7.1-node-browsers
 
-    steps:
+     steps:
       - checkout
 
 
