@@ -1,138 +1,21 @@
-aliases:
-  - &node_executor
-      executor:
-        name: node/node
-        node-version: "10"
 
-  - &release_filter
-      branches:
-        only:
-          - master
 
-  - &pull_request_filter
-      branches:
-        ignore:
-          - master
-
-version: 2.1
-
-orbs:
-  ci: bigcommerce/internal@volatile
-  node: bigcommerce/internal-node@volatile
-  checkout-sdk-js:
-    commands:
-      install_dependencies:
-        steps:
-          - restore_cache:
-              keys:
-                - checkout-sdk-js
-          - run:
-              name: "Install NPM dependencies"
-              command: npm ci
-          - save_cache:
-              key: checkout-sdk-js
-              paths:
-                - ~/.npm
-
+version: 2.0
 jobs:
-  test:
-    <<: *node_executor
-    steps:
-      - ci/pre-setup
-      - checkout-sdk-js/install_dependencies
-      - run:
-          name: "Run unit tests"
-          command: npm run test:series -- --coverage
-      - store_artifacts:
-          path: coverage
-          destination: coverage
 
-  build:
-    <<: *node_executor
     steps:
-      - ci/pre-setup
-      - checkout-sdk-js/install_dependencies
-      - run:
-          name: "Run linter"
-          command: npm run lint
-      - run:
-          name: "Build distribution files"
-          command: npm run build && npm run docs
-      - persist_to_workspace:
-          root: .
-          paths:
-            - dist
-            - docs
+      - checkout
 
-  validate_commits:
-    <<: *node_executor
-    steps:
-      - ci/pre-setup
-      - ci/merge-base
-      - run:
-          name: "Validate commits"
-          command: "[ -z $MERGE_BASE_SHA1 ] || npx @bigcommerce/validate-commits $MERGE_BASE_SHA1..$CIRCLE_SHA1"
 
-  release:
-    <<: *node_executor
-    steps:
-      - ci/pre-setup
-      - checkout-sdk-js/install_dependencies
       - run:
-          name: "Configure Git user"
+          name: Make Executable
           command: |
-            git config user.email $GIT_USER_EMAIL
-            git config user.name $GIT_USER_NAME
+            sudo chmod +x ./CxConsolePlugin-8.90.1/runCxConsole.sh
+            ls -la ./CxConsolePlugin-8.90.1/runCxConsole.sh
+            pwd
       - run:
-          name: "Remove old release files"
-          command: rm -rf dist docs
-      - attach_workspace:
-          at: .
-      - run:
-          name: "Create and tag new release"
-          command: npm run release:version
-      - run:
-          name: "Push commits and tag to GitHub"
-          command: |
-            git push --follow-tags origin $CIRCLE_BRANCH
-      - run:
-          name: "Publish release to NPM"
-          command: |
-            echo "//registry.npmjs.org/:_authToken=$NPM_AUTH_TOKEN" > .npmrc
-            npm publish
-
-workflows:
-  version: 2
-
-  pull_request:
-    jobs:
-      - test:
-          filters:
-            <<: *pull_request_filter
-      - build:
-          filters:
-            <<: *pull_request_filter
-      - validate_commits:
-          filters:
-            <<: *pull_request_filter
-
-  release:
-    jobs:
-      - test:
-          filters:
-            <<: *release_filter
-      - build:
-          filters:
-            <<: *release_filter
-      - approve:
-          filters:
-            <<: *release_filter
-          type: approval
-          requires:
-            - test
-            - build
-      - release:
-          filters:
-            <<: *release_filter
-          requires:
-            - approve
+          name: CxSAST Scan
+          #######
+          #command: sudo ./CxConsolePlugin-8.90.1/runCxConsole.sh Scan -v -CxServer "http://35.188.10.56" -projectName "graphql" -CxUser checkmarx -CxPassword B!gC0mmerce -Locationtype folder -LocationPath ~/repo -Preset "Checkmarx Default"
+          #command: sudo ./CxConsolePlugin-8.90.1/runCxConsole.sh Scan -v -CxServer "http://35.188.10.56" -projectName "CxServer\graphql" -CxUser checkmarx -CxPassword SaO73X1VpFms#ffysY -Locationtype folder -LocationPath ~/repo -Preset "Checkmarx Default"
+          command: sudo ./CxConsolePlugin-8.90.1/runCxConsole.sh Scan -v -CxServer http://35.188.10.56 -CxUser checkmarx -cxpassword XgL4AjxB37dc3wv# -ProjectName "CxServer\checkout-sdk-js" -Locationtype GIT -locationURL https://bc-venkata:6150e66a34d0ddf4b7dec5907469d565ca2e2643@github.com/bc-venkata/checkout-sdk-js -locationBranch refs/heads/master
